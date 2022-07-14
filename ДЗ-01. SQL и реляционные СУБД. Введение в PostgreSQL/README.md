@@ -8,9 +8,10 @@
 
 ### Шаг 1. Создать новый проект и инстанс виртуальной машины
 
-> Создать новый проект в Google Cloud Platform, Яндекс облако или на любых ВМ, докере , например postgres2022-, где yyyymmdd год, месяц и день вашего рождения (имя проекта должно быть уникально на уровне GCP). Далее создать инстанс виртуальной машины Compute Engine с дефолтными параметрами, добавить свой ssh ключ в GCE metadata. Зайти удаленным ssh (первая сессия), не забывайте про ssh-add.
+> Создать новый проект в **Google Cloud Platform**, Яндекс облако или на любых ВМ, докере , например postgres2022-, где yyyymmdd год, месяц и день вашего рождения (имя проекта должно быть уникально на уровне GCP). Далее создать инстанс виртуальной машины Compute Engine с дефолтными параметрами, добавить свой ssh ключ в GCE metadata. Зайти удаленным ssh (первая сессия), не забывайте про ssh-add.
 
 **Результат**
+
 В качестве платформы для работы с сервисами в облаке выбрана [Yandex.Cloud](https://console.cloud.yandex.ru). Возможности поработать с GCP, невозможно зарегистрироваться.
 
 Для подключения к ВМ, созданной в облачной платформе, заранее сгенерирован  SSH-ключ (пара ключей):
@@ -31,10 +32,7 @@
 
 ### Шаг 2. Установить PostgreSQL, подготовить две вкладки для запросов (с клиентом для PG), отключить auto commit
 
-> поставить PostgreSQL
-зайти вторым ssh (вторая сессия)
-запустить везде psql из под пользователя postgres
-выключить auto commit
+> Поставить **PostgreSQL**. Зайти вторым ssh (вторая сессия). Запустить везде psql из под пользователя **postgres**. Выключить **auto commit**
 
 **Результат**
 
@@ -60,8 +58,8 @@ sudo apt update && sudo apt upgrade -y && sudo sh -c 'echo "deb http://apt.postg
 
 ### Шаг 3. Подготовить таблицу для работы с транзакциями, проверить текущий уровень изоляции для транзакций (по умолчанию)
 
-> сделать в первой сессии новую таблицу и наполнить ее данными create table persons(id serial, first_name text, second_name text); insert into persons(first_name, second_name) values('ivan', 'ivanov'); insert into persons(first_name, second_name) values('petr', 'petrov'); commit;
-посмотреть текущий уровень изоляции: show transaction isolation level
+> Сделать в первой сессии новую таблицу и наполнить ее данными `create table persons(id serial, first_name text, second_name text); insert into persons(first_name, second_name) values('ivan', 'ivanov'); insert into persons(first_name, second_name) values('petr', 'petrov'); commit;`
+посмотреть текущий уровень изоляции: **show transaction isolation level**
 
 **Результат**
 
@@ -77,14 +75,7 @@ sudo apt update && sudo apt upgrade -y && sudo sh -c 'echo "deb http://apt.postg
 
 ### Шаг 4. Уровень изоляции транзакций Read Committed (по умолчанию)
 
-> начать новую транзакцию в обоих сессиях с дефолтным (не меняя) уровнем изоляции
-в первой сессии добавить новую запись insert into persons(first_name, second_name) values('sergey', 'sergeev');
-сделать select * from persons во второй сессии
-видите ли вы новую запись и если да то почему?
-завершить первую транзакцию - commit;
-сделать select * from persons во второй сессии
-видите ли вы новую запись и если да то почему?
-завершите транзакцию во второй сессии
+> Начать новую транзакцию в обоих сессиях с дефолтным (не меняя) уровнем изоляции. В первой сессии добавить новую запись `insert into persons(first_name, second_name) values('sergey', 'sergeev');` сделать `select * from persons` во второй сессии. Видите ли вы новую запись и если да то почему? Завершить первую транзакцию - `commit;` сделать `select * from persons` во второй сессии. Видите ли вы новую запись и если да то почему? Завершите транзакцию во второй сессии.
 
 **Результат**
 
@@ -107,15 +98,7 @@ sudo apt update && sudo apt upgrade -y && sudo sh -c 'echo "deb http://apt.postg
 
 ### Шаг 5. Уровень изоляции транзакций Repeatable Read
 
-> начать новые но уже repeatable read транзации - set transaction isolation level repeatable read;
-в первой сессии добавить новую запись insert into persons(first_name, second_name) values('sveta', 'svetova');
-сделать select * from persons во второй сессии
-видите ли вы новую запись и если да то почему?
-завершить первую транзакцию - commit;
-сделать select * from persons во второй сессии
-видите ли вы новую запись и если да то почему?
-завершить вторую транзакцию
-сделать select * from persons во второй сессии. Видите ли вы новую запись и если да то почему?
+> Начать новые но уже repeatable read транзации - set transaction isolation level repeatable read; в первой сессии добавить новую запись `insert into persons(first_name, second_name) values('sveta', 'svetova');` сделать `select * from persons` во второй сессии. Видите ли вы новую запись и если да то почему? Завершить первую транзакцию - `commit;` сделать `select * from persons` во второй сессии. Видите ли вы новую запись и если да то почему? Завершить вторую транзакцию, сделать `select * from persons` во второй сессии. Видите ли вы новую запись и если да то почему?
 
 **Результат**
 
