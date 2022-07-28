@@ -1,0 +1,141 @@
+# Установка и настройка PostgreSQL
+
+## Цели:
+1. Создавать дополнительный диск для уже существующей виртуальной машины, размечать его и делать на нем файловую систему.
+1. Переносить содержимое БД PostgreSQL на дополнительный диск.
+1. Переносить содержимое БД PostgreSQL между виртуальными машинами.
+
+## Описание выполнения домашнего задания
+
+### Шаг 1. Создать виртуальную машину c Ubuntu 20.04 LTS, поставить на нее PostgreSQL 14, проверить что кластер запущен, создать объект с произвольным содержимым
+
+> В качестве платформы с облачными сервисами будем использовать Yandex Cloud. Подготовим инстанс по уже известным шагам. Опишем команды для установки PostgreSQL 14.
+
+**Результат**
+
+Создана виртуальная машина (**gchibizov-pg-20220728**):
+![Виртуальная машина](/images/scr-dz06-01.png)
+
+Копируем публичный IP-адрес 130.193.42.187 и пытаемся подключиться через SSH с терминала MacOS:
+![Подключение через SSH к ВМ](/images/scr-dz06-02.png)
+
+Команда для установки PostgreSQL:
+
+```
+sudo apt update && sudo apt upgrade -y && sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list' && wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add - && sudo apt-get update && sudo apt-get -y install postgresql-14
+```
+
+Команда для проверки состояния кластера:
+
+```
+sudo -u postgres pg_lsclusters
+```
+![Проверяем состояние кластера](/images/scr-dz06-03.png)
+
+Подготовим данные, создаем таблицу:
+
+```
+sudo -u postgres psql
+
+postgres=# create table test(msg text);
+postgres=# insert into test values ('Z1'), ('Z2');
+postgres=# select * from test;
+```
+![Подготовим данные](/images/scr-dz06-04.png)
+
+
+### Шаг 2. Остановить кластер, создать новый диск, добавить этот диск к ВМ, проинициализировать диск, перенести содержимое каталога /var/lib/postgres/14 на новый диск и попробовать запустить кластер
+
+> Остановим кластер, опишем команды, которые нужно выполнить. Далее будем проводить манипуляции с созданием нового диска и переносом данных на этот диск. Завершающее действие - пробуем запустить наш кластер. Судя по всему, после переноса данных нас будет ждать сюрприз при попытке запустить наш кластер. Так же могут быть сюрпризы с добавлением дисков в инструментарии Yandex Cloud.
+
+**Результат**
+
+Остановили кластер, проверим его состояние:
+
+```
+sudo pg_ctlcluster 14 main stop
+pg_lsclusters
+```
+![Остановим кластер](/images/scr-dz06-05.png)
+
+Создан новый диск в Yandex Cloud Диски(**pg-gchibizov-disk**), не забываем про кнопку `Создать` в разделе дисков в правом верхнем углу, не сразу можнг найти. В Yandex Cloud в принципе не все управляющие элементы можно быстро найти, но в правый верхний угол загялдывать нужно почти всегда.
+Кстати, настырно маячит панель, где отображается стоимость ресурсов (в месяц):
+![Создание диска для ВМ](/images/scr-dz06-06.png)
+
+Подключим его к нашей ВМ:
+![Создание диска для ВМ](/images/scr-dz06-07.png)
+
+Проходим по ссылке и изучаем инструкцию ([How To Partition and Format Storage Devices in Linux](https://www.digitalocean.com/community/tutorials/how-to-partition-and-format-storage-devices-in-linux)). На языке команд все выглядит следующим образом:
+
+```
+sudo apt update
+sudo apt install parted
+```
+![Подготовка утилиты parted](/images/scr-dz06-08.png)
+
+Далее пытаемся обнаружить наш новый диск, в нашем случае `/dev/vdb`:
+
+```
+sudo parted -l | grep Error
+lsblk
+```
+![Смотрим есть ли что подключить](/images/scr-dz06-09.png)
+
+Определим Parition Table (стандарт для разбиения нашего нового диска на разделы, есть два вариант GPT (модный) и MBR), создадим новый раздел. Код для выполнения операции:
+
+```
+# Вариант с GPT
+sudo parted /dev/vdb mklabel gpt
+
+# Вариант с MBR
+sudo parted /dev/vdb mklabel msdos
+
+# Создать новый раздел
+sudo parted -a opt /dev/vdb mkpart primary ext4 0% 100%
+```
+
+Создаем файловую систему на новом разделе. Команды:
+
+```
+sudo mkfs.ext4 -L pgpartition /dev/vdb1
+
+# Поменять потом метку для тома
+sudo e2label /dev/vdb1 newlabel
+```
+
+Подготовим каталог для нового раздела и смонтируем его в этот каталог:
+
+```
+sudo mkdir -p /mnt/data
+sudo mount -o defaults /dev/vdb1 /mnt/data
+
+# Автоматическое монтирование нашего диска при старте системы
+sudo nano /etc/fstab
+
+# Например добавить строчку типа
+LABEL=pgpartition /mnt/data ext4 defaults 0 2
+```
+
+Проверим наше подключенный диск (и раздел на нем). Можно создать любой файл с содержимым и убедиться, что все работает корректно:
+
+```
+df -h -x tmpfs
+
+echo "success" | sudo tee /mnt/data/test_file
+cat /mnt/data/test_file
+sudo rm /mnt/data/test_file
+```
+
+Выдача разрешений: `chown -R postgres:postgres /mnt/data/`
+![Создаем раздел на новом диске и монтируем его](/images/scr-dz06-10.png)
+
+Теперь самое интересное. Наш диск подключен и похоже, что живой. Переносим каталог с данными PostgreSQL и запускаем кластер:
+
+```
+mv /var/lib/postgresql/14 /mnt/data
+
+sudo -u postgres pg_ctlcluster 14 main start
+```
+![Ошибка запуска кластера](/images/scr-dz06-11.png)
+
+Вполне ожидаемо, получаем ошибку. Мы перенесли все данные на новый диск, а PostgreSQL забыли об этом сообщить
