@@ -18,8 +18,6 @@
 Определим известные настройки сервера **PostgreSQL**, которые позволяют достичь высокой производительности. В качестве машинны будем использовать развернутый в **Docker** контейнер на локальной машине с **MacOS**.
 
 ```sql
--- Определим список настроек, которые будем использовать для ускорения
-select * from pg_catalog.pg_settings where name in ('data_checksums','ignore_checksum_failure')
 -- Определим настройки с помощью утилиты https://pgtune.leopard.in.ua
 
 -- DB Version: 14
@@ -53,40 +51,7 @@ select * from pg_catalog.pg_file_settings
 
 Получили такой список измененных настроек.
 
-```bash
-/var/lib/postgresql/data/postgresql.conf	240	5	max_wal_size	1GB	false
-/var/lib/postgresql/data/postgresql.conf	241	6	min_wal_size	80MB	false
-/var/lib/postgresql/data/postgresql.conf	580	7	log_timezone	Etc/UTC	true
-/var/lib/postgresql/data/postgresql.conf	694	8	datestyle	iso, mdy	true
-/var/lib/postgresql/data/postgresql.conf	696	9	timezone	Etc/UTC	true
-/var/lib/postgresql/data/postgresql.conf	710	10	lc_messages	en_US.utf8	true
-/var/lib/postgresql/data/postgresql.conf	712	11	lc_monetary	en_US.utf8	true
-/var/lib/postgresql/data/postgresql.conf	713	12	lc_numeric	en_US.utf8	true
-/var/lib/postgresql/data/postgresql.conf	714	13	lc_time	en_US.utf8	true
-/var/lib/postgresql/data/postgresql.conf	717	14	default_text_search_config	pg_catalog.english	true
-/var/lib/postgresql/data/postgresql.auto.conf	3	15	checkpoint_timeout	30	true
-/var/lib/postgresql/data/postgresql.auto.conf	4	16	log_checkpoints	on	true
-/var/lib/postgresql/data/postgresql.auto.conf	5	17	log_connections	on	true
-/var/lib/postgresql/data/postgresql.auto.conf	6	18	logging_collector	on	true
-/var/lib/postgresql/data/postgresql.auto.conf	7	19	synchronous_commit	off	true
-/var/lib/postgresql/data/postgresql.auto.conf	8	20	max_connections	100	true
-/var/lib/postgresql/data/postgresql.auto.conf	9	21	shared_buffers	2GB	false	setting could not be applied
-/var/lib/postgresql/data/postgresql.auto.conf	10	22	effective_cache_size	6GB	true
-/var/lib/postgresql/data/postgresql.auto.conf	11	23	maintenance_work_mem	512MB	true
-/var/lib/postgresql/data/postgresql.auto.conf	12	24	checkpoint_completion_target	0.9	true
-/var/lib/postgresql/data/postgresql.auto.conf	13	25	wal_buffers	16MB	false	setting could not be applied
-/var/lib/postgresql/data/postgresql.auto.conf	14	26	default_statistics_target	100	true
-/var/lib/postgresql/data/postgresql.auto.conf	15	27	random_page_cost	1.1	true
-/var/lib/postgresql/data/postgresql.auto.conf	16	28	work_mem	10485kB	true
-/var/lib/postgresql/data/postgresql.auto.conf	17	29	min_wal_size	2GB	true
-/var/lib/postgresql/data/postgresql.auto.conf	18	30	max_wal_size	8GB	true
-/var/lib/postgresql/data/postgresql.auto.conf	19	31	max_worker_processes	4	false	setting could not be applied
-/var/lib/postgresql/data/postgresql.auto.conf	20	32	max_parallel_workers_per_gather	2	true
-/var/lib/postgresql/data/postgresql.auto.conf	21	33	max_parallel_workers	4	true
-/var/lib/postgresql/data/postgresql.auto.conf	22	34	max_parallel_maintenance_workers	2	true
-/var/lib/postgresql/data/postgresql.auto.conf	23	35	effective_io_concurrency	200	true
-/var/lib/postgresql/data/postgresql.auto.conf	24	36	autovacuum	off	true
-```
+![Список настроек](/images/scr-dz13-01.png)
 
 ### Шаг 2. Нагрузить кластер через доступную утилиту
 
