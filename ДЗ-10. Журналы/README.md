@@ -269,6 +269,8 @@ PostgreSQL Database directory appears to contain a database; Skipping initializa
 2022-11-26 12:41:42.751 UTC [38] STATEMENT:     select * from pgbench_accounts pa
 ```
 
+Попробуем исправить ошибку, включив настройку для пропуска подобных ошибок.
+
 ```sql
 -- Настройки
 alter system set ignore_checksum_failure = on;
@@ -278,7 +280,7 @@ select * from pgbench_accounts
 
 ```
 
-НО теперь все равно не хочется читать данные из таблицы. Возможно, как-то не очень хорошо поправил файл с данными .. но мысль понятна.
+НО теперь ловим неожиданное поведение, PG все равно не хочет читать данные из таблицы. Возможно, как-то не очень хорошо поправил файл с данными .. но направление мысли понятно.
 
 ```bash
 postgres@3e8d22724c1d:/$ psql
